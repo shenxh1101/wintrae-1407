@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Music, Edit2, Trash2, Plus, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Music, Edit2, Trash2, Plus, Check, AlertCircle, Pause } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -162,13 +162,36 @@ export const HomeworkCard = ({
                           <Plus className="w-3.5 h-3.5" />
                         </Button>
                         {section.status !== 'passed' && (
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={(e) => { e.stopPropagation(); onUpdateStatus(section.id, 'passed'); }}
                             className="text-accent-mint hover:text-accent-mint hover:bg-accent-mint/10"
+                            title="标记为通过"
                           >
                             <Check className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {section.status !== 'needs_review' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); onUpdateStatus(section.id, 'needs_review'); }}
+                            className="text-accent-gold hover:text-accent-gold hover:bg-accent-gold/10"
+                            title="标记为需重练"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {section.status !== 'paused' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); onUpdateStatus(section.id, 'paused'); }}
+                            className="text-gray-500 hover:text-gray-600 hover:bg-gray-100"
+                            title="标记为暂停"
+                          >
+                            <Pause className="w-3.5 h-3.5" />
                           </Button>
                         )}
                         <Button 

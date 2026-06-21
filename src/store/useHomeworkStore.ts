@@ -39,6 +39,15 @@ export const useHomeworkStore = create<HomeworkStore>((set, get) => ({
       const api = getApi();
       const homeworkList = await handleIpcResponse(await api.homework.getAll(studentId));
       set({ homeworkList, loading: false });
+
+      for (const homework of homeworkList) {
+        await get().fetchSections(homework.id);
+      }
+
+      const allSections = Object.values(get().sections).flat();
+      for (const section of allSections) {
+        await get().fetchRecordings(section.id);
+      }
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
     }

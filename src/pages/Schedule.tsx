@@ -50,8 +50,8 @@ export const Schedule = () => {
   }, [fetchStudents]);
 
   useEffect(() => {
-    fetchWeek(formatDate(weekRange.start), formatDate(weekRange.end));
-  }, [fetchWeek, weekRange.start, weekRange.end]);
+    fetchWeek();
+  }, [fetchWeek]);
 
   const studentMap = useMemo(() => {
     const map: Record<number, string> = {};

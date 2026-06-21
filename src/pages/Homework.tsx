@@ -33,8 +33,12 @@ export const Homework = () => {
 
   useEffect(() => {
     fetchStudents();
-    fetchAll();
-  }, [fetchStudents, fetchAll]);
+  }, [fetchStudents]);
+
+  useEffect(() => {
+    const studentId = studentFilter ? parseInt(studentFilter) : undefined;
+    fetchAll(studentId);
+  }, [fetchAll, studentFilter]);
 
   const studentMap = useMemo(() => {
     const map: Record<number, string> = {};

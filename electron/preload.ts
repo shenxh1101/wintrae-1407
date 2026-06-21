@@ -11,8 +11,8 @@ const api = {
     getStats: (id: number): Promise<IpcResponse<any>> => ipcRenderer.invoke('students:getStats', id),
   },
   lessons: {
-    getAll: (startDate?: string, endDate?: string): Promise<IpcResponse<any[]>> => 
-      ipcRenderer.invoke('lessons:getAll', startDate, endDate),
+    getAll: (): Promise<IpcResponse<any[]>> => 
+      ipcRenderer.invoke('lessons:getAll'),
     getById: (id: number): Promise<IpcResponse<any>> => ipcRenderer.invoke('lessons:getById', id),
     getByStudent: (studentId: number): Promise<IpcResponse<any[]>> => 
       ipcRenderer.invoke('lessons:getByStudent', studentId),

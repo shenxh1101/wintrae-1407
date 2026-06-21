@@ -6,8 +6,8 @@ interface ScheduleStore {
   lessons: Lesson[];
   loading: boolean;
   error: string | null;
-  fetchAll: (startDate?: string, endDate?: string) => Promise<void>;
-  fetchWeek: (weekStart: string, weekEnd: string) => Promise<void>;
+  fetchAll: () => Promise<void>;
+  fetchWeek: () => Promise<void>;
   fetchByStudent: (studentId: number) => Promise<void>;
   create: (data: Omit<Lesson, 'id' | 'createdAt'>) => Promise<Lesson>;
   update: (id: number, data: Partial<Omit<Lesson, 'id' | 'createdAt'>>) => Promise<void>;
@@ -20,22 +20,22 @@ export const useScheduleStore = create<ScheduleStore>((set, get) => ({
   loading: false,
   error: null,
 
-  fetchAll: async (startDate, endDate) => {
+  fetchAll: async () => {
     set({ loading: true, error: null });
     try {
       const api = getApi();
-      const lessons = await handleIpcResponse(await api.lessons.getAll(startDate, endDate));
+      const lessons = await handleIpcResponse(await api.lessons.getAll());
       set({ lessons, loading: false });
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
     }
   },
 
-  fetchWeek: async (weekStart, weekEnd) => {
+  fetchWeek: async () => {
     set({ loading: true, error: null });
     try {
       const api = getApi();
-      const lessons = await handleIpcResponse(await api.lessons.getAll(weekStart, weekEnd));
+      const lessons = await handleIpcResponse(await api.lessons.getAll());
       set({ lessons, loading: false });
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
@@ -59,7 +59,10 @@ export const useScheduleStore = create<ScheduleStore>((set, get) => ({
       const api = getApi();
       const lesson = await handleIpcResponse(await api.lessons.create(data));
       set(state => ({
-        lessons: [...state.lessons, lesson].sort((a, b) => a.startTime.localeCompare(b.startTime)),
+        lessons: [...state.lessons, lesson].sort((a, b) => {
+          if (a.dayOfWeek !== b.dayOfWeek) return a.dayOfWeek - b.dayOfWeek;
+          return a.startTime.localeCompare(b.startTime);
+        }),
         loading: false
       }));
       return lesson;

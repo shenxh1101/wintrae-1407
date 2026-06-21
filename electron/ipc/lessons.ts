@@ -3,22 +3,17 @@ import { getDatabase } from '../database';
 import type { Lesson } from '@shared/types';
 
 export function setupLessonIpc(): void {
-  ipcMain.handle('lessons:getAll', async (_event, startDate?: string, endDate?: string) => {
+  ipcMain.handle('lessons:getAll', async () => {
     try {
       const db = getDatabase();
-      let query = `
+      const query = `
         SELECT 
           id, student_id as studentId, day_of_week as dayOfWeek, start_time as startTime, end_time as endTime,
           type, status, notes, created_at as createdAt
         FROM lessons
+        ORDER BY day_of_week, start_time
       `;
-      const params: string[] = [];
-      if (startDate && endDate) {
-        query += ' WHERE start_time >= ? AND start_time <= ?';
-        params.push(startDate, endDate);
-      }
-      query += ' ORDER BY start_time';
-      const lessons = db.prepare(query).all(...params) as Lesson[];
+      const lessons = db.prepare(query).all() as Lesson[];
       return { success: true, data: lessons };
     } catch (error) {
       return { success: false, error: (error as Error).message };

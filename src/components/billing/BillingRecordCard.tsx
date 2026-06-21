@@ -12,6 +12,7 @@ interface BillingRecordCardProps {
   onDelete: () => void;
   onTogglePaid: () => void;
   onExportReport: () => void;
+  isExporting?: boolean;
 }
 
 const typeConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
@@ -27,6 +28,7 @@ export const BillingRecordCard = ({
   onDelete,
   onTogglePaid,
   onExportReport,
+  isExporting = false,
 }: BillingRecordCardProps) => {
   const config = typeConfig[record.type] || typeConfig.other;
   const Icon = config.icon;
@@ -100,8 +102,13 @@ export const BillingRecordCard = ({
                 onClick={onExportReport}
                 className="text-primary-600 hover:text-primary-700 hover:bg-primary-50"
                 title="导出学习报告"
+                disabled={isExporting}
               >
-                <Download className="w-4 h-4" />
+                {isExporting ? (
+                  <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
               </Button>
               <Button
                 variant="ghost"

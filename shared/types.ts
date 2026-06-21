@@ -127,7 +127,7 @@ export type WindowApi = {
     delete: (id: number) => Promise<IpcResponse<void>>;
   };
   lessons: {
-    getAll: (startDate?: string, endDate?: string) => Promise<IpcResponse<Lesson[]>>;
+    getAll: () => Promise<IpcResponse<Lesson[]>>;
     getByStudent: (studentId: number) => Promise<IpcResponse<Lesson[]>>;
     create: (data: Omit<Lesson, 'id' | 'createdAt'>) => Promise<IpcResponse<Lesson>>;
     update: (id: number, data: Partial<Omit<Lesson, 'id' | 'createdAt'>>) => Promise<IpcResponse<void>>;

@@ -8,6 +8,7 @@ interface BillingStore {
   summary: BillingSummary | null;
   loading: boolean;
   error: string | null;
+  recalculateSummary: () => void;
   fetchAll: (studentId?: number) => Promise<void>;
   fetchMonthlyStats: () => Promise<void>;
   fetchSummary: () => Promise<void>;
@@ -24,12 +25,24 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
   loading: false,
   error: null,
 
+  recalculateSummary: () => {
+    const records = get().records;
+    const totalAmount = records.reduce((sum, r) => sum + r.amount, 0);
+    const unpaidAmount = records.filter(r => !r.isPaid).reduce((sum, r) => sum + r.amount, 0);
+    const unpaidStudentIds = new Set(records.filter(r => !r.isPaid).map(r => r.studentId));
+    const unpaidStudents = unpaidStudentIds.size;
+    set({ summary: { totalAmount, unpaidAmount, unpaidStudents } });
+  },
+
   fetchAll: async (studentId) => {
     set({ loading: true, error: null });
     try {
       const api = getApi();
       const records = await handleIpcResponse(await api.billing.getAll(studentId));
       set({ records, loading: false });
+      if (!studentId) {
+        get().recalculateSummary();
+      }
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
     }
@@ -65,6 +78,7 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
         records: [record, ...state.records].sort((a, b) => b.date.localeCompare(a.date)),
         loading: false
       }));
+      get().recalculateSummary();
       return record;
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
@@ -81,6 +95,7 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
         records: state.records.map(r => r.id === id ? { ...r, ...data } : r),
         loading: false
       }));
+      get().recalculateSummary();
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
       throw error;
@@ -96,6 +111,7 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
         records: state.records.filter(r => r.id !== id),
         loading: false
       }));
+      get().recalculateSummary();
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
       throw error;
@@ -111,6 +127,7 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
           r.id === id ? { ...r, isPaid: !r.isPaid } : r
         )
       }));
+      get().recalculateSummary();
     } catch (error) {
       console.error('Failed to toggle paid status:', error);
       throw error;

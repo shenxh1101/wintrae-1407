@@ -21,8 +21,8 @@ import { handleIpcResponse, getApi } from '@/utils/ipc';
 export const Billing = () => {
   const { records, loading, fetchAll, create, update, remove, togglePaid, fetchSummary, fetchMonthlyStats, monthlyStats, summary } = useBillingStore();
   const { students, fetchAll: fetchStudents, studentStats, fetchStats } = useStudentStore();
-  const { records: lessonRecords } = useLessonStore();
-  const { homeworkList } = useHomeworkStore();
+  const { records: lessonRecords, fetchAll: fetchLessons } = useLessonStore();
+  const { homeworkList, fetchAll: fetchHomework, fetchSections, fetchRecordings, sections, recordings } = useHomeworkStore();
   
   const [studentFilter, setStudentFilter] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
@@ -32,6 +32,7 @@ export const Billing = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingRecord, setDeletingRecord] = useState<BillingRecord | null>(null);
   const [activeTab, setActiveTab] = useState('records');
+  const [exportingReport, setExportingReport] = useState<number | null>(null);
 
   useEffect(() => {
     fetchStudents();
@@ -103,17 +104,59 @@ export const Billing = () => {
   };
 
   const handleExportReport = async (student: Student) => {
-    const stats = studentStats[student.id];
-    if (!stats) {
-      alert('请稍候，数据加载中...');
-      return;
-    }
-
-    const studentRecords = lessonRecords.filter(r => r.studentId === student.id);
-    const studentHomework = homeworkList.filter(h => h.studentId === student.id);
-    const studentBilling = records.filter(b => b.studentId === student.id);
-
+    setExportingReport(student.id);
     try {
+      const hasStudentLessons = lessonRecords.some(r => r.studentId === student.id);
+      const hasStudentHomework = homeworkList.some(h => h.studentId === student.id);
+      const hasStats = !!studentStats[student.id];
+
+      const loadPromises: Promise<void>[] = [];
+
+      if (!hasStudentLessons) {
+        loadPromises.push(fetchLessons(student.id));
+      }
+
+      if (!hasStats) {
+        loadPromises.push(fetchStats(student.id));
+      }
+
+      if (!hasStudentHomework) {
+        loadPromises.push(fetchHomework(student.id));
+      }
+
+      await Promise.all(loadPromises);
+
+      const currentHomeworkList = homeworkList.filter(h => h.studentId === student.id);
+
+      const sectionPromises: Promise<void>[] = [];
+      currentHomeworkList.forEach(hw => {
+        if (!sections[hw.id]) {
+          sectionPromises.push(fetchSections(hw.id));
+        }
+      });
+      await Promise.all(sectionPromises);
+
+      const recordingPromises: Promise<void>[] = [];
+      currentHomeworkList.forEach(hw => {
+        const hwSections = sections[hw.id] || [];
+        hwSections.forEach(section => {
+          if (!recordings[section.id]) {
+            recordingPromises.push(fetchRecordings(section.id));
+          }
+        });
+      });
+      await Promise.all(recordingPromises);
+
+      const stats = studentStats[student.id];
+      if (!stats) {
+        alert('学生统计数据加载失败，请重试');
+        return;
+      }
+
+      const studentRecords = lessonRecords.filter(r => r.studentId === student.id);
+      const studentHomework = homeworkList.filter(h => h.studentId === student.id);
+      const studentBilling = records.filter(b => b.studentId === student.id);
+
       const arrayBuffer = await generateStudentReport(
         student,
         stats,
@@ -128,6 +171,8 @@ export const Billing = () => {
     } catch (error) {
       console.error('导出报告失败:', error);
       alert('导出报告失败，请重试');
+    } finally {
+      setExportingReport(null);
     }
   };
 
@@ -275,6 +320,7 @@ export const Billing = () => {
                           onEdit={() => handleEdit(record)}
                           onDelete={() => handleDeleteClick(record)}
                           onTogglePaid={() => handleTogglePaid(record)}
+                          isExporting={exportingReport === record.studentId}
                           onExportReport={() => {
                             const student = students.find(s => s.id === record.studentId);
                             if (student) handleExportReport(student);
@@ -305,9 +351,14 @@ export const Billing = () => {
                             variant="primary"
                             size="sm"
                             onClick={() => handleExportReport(student)}
+                            disabled={exportingReport === student.id}
                           >
-                            <Download className="w-4 h-4 mr-1" />
-                            导出报告
+                            {exportingReport === student.id ? (
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+                            ) : (
+                              <Download className="w-4 h-4 mr-1" />
+                            )}
+                            {exportingReport === student.id ? '导出中...' : '导出报告'}
                           </Button>
                         </div>
                         {studentStats[student.id] && (
